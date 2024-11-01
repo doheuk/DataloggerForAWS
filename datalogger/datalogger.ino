@@ -7,7 +7,7 @@
 
 #define DHTPIN A0 // 온습도센서
 #define WINDPIN A1 // 풍속센서
-#define CSPIN 8 //sd카드 
+#define CSPIN 4 //sd카드 
 
 RTC_DS3231 rtc; // dht 설정
 DHT11 dht(A0); // dht11 설정
@@ -45,11 +45,10 @@ void setup() {
   tempDT = DateTime(__DATE__,__TIME__);
 
   // SD 카드 초기화
-    if (!SD.begin(CSPIN)) {
-        Serial.println("SD 카드 초기화 실패");
-        return;
-    }
-
+  while(!SD.begin(CSPIN)){
+    Serial.println("SD카드 초기화 실패");
+    delay(1000);
+  }
 }
 void loop() {
   DateTime nowDT = rtc.now();
@@ -101,9 +100,7 @@ float computAverage(float buffer[], int size) {
 }
 
 void logSamplingData(float buffer[], int size, String sensor) {
-    String filename = String(tempDT.year()) + 
-                           (tempDT.month() < 10 ? "0" : "") + String(tempDT.month()) + 
-                           (tempDT.day() < 10 ? "0" : "") + String(tempDT.day())+sensor+".txt";  // 날짜별 샘플링 파일명
+    String filename = (tempDT.month() < 10 ? "0" : "") + String(tempDT.month()) + (tempDT.day() < 10 ? "0" : "") + String(tempDT.day())+sensor+".txt";  // 날짜별 샘플링 파일명
     samplingFile = SD.open(filename, FILE_WRITE);
 
     if (samplingFile) {
@@ -122,9 +119,7 @@ void logSamplingData(float buffer[], int size, String sensor) {
 
 // 1분 평균 데이터 로그 함수
 void logAverageData() {
-    String filename = String(tempDT.year()) + 
-                           (tempDT.month() < 10 ? "0" : "") + String(tempDT.month()) + 
-                           (tempDT.day() < 10 ? "0" : "") + String(tempDT.day())+"m.txt";  // 날짜별 평균 파일명
+    String filename =(tempDT.month() < 10 ? "0" : "") + String(tempDT.month()) + (tempDT.day() < 10 ? "0" : "") + String(tempDT.day())+"m.txt";  // 날짜별 평균 파일명
     averageFile = SD.open(filename, FILE_WRITE);
     // 평균 데이터 기록
     if(averageFile){
@@ -137,15 +132,3 @@ void logAverageData() {
       Serial.println("평균 파일 생성 실패");
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
