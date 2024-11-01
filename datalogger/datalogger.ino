@@ -2,7 +2,6 @@
 #include <DHT11.h>
 #include <SD.h>
 #include <SPI.h>
-#include <TimerOne.h>
 #include <RTClib.h>
 
 #define DHTPIN A0 // 온습도센서
@@ -23,16 +22,12 @@ float avrWind, avrTemp, avrHumi;
 int tempIndex = 0;
 int windIndex = 0;
 DateTime tempDT;
-void sample();
 float computAverage(float buffer[], int size);
 void logSamplingData(float buffer[], int size, String sensor);
 void logAverageData();
-
+unsigned long lastWindSample;
 void setup() {
   Serial.begin(9600);
-  // 샘플링 타임 인터럽트
-  Timer1.initialize(250000); //0.25초
-  Timer1.attachInterrupt(sample);
   // rtc 시작
   if(!rtc.begin()){
     Serial.println("Couldn't find RTC");
@@ -49,8 +44,14 @@ void setup() {
     Serial.println("SD카드 초기화 실패");
     delay(1000);
   }
+  Serial.println("SD카드 초기화 성공");
+  lastWindSample = millis(); 
 }
+
+const unsigned long windInterval = 250;
+
 void loop() {
+  unsigned long currentTime = millis();
   DateTime nowDT = rtc.now();
   if(nowDT.second()%10 ==0){
     tempBuffer[tempIndex] = dht.readTemperature();
@@ -60,6 +61,15 @@ void loop() {
     } else {
       tempIndex++;
     }
+  }
+  if(currentTime - lastWindSample >= windInterval) {
+    windSpeedBuffer[windIndex] = analogRead(WINDPIN) * 30 / 1023.0;
+    if(windIndex == 239){ 
+      windIndex = 0;
+    } else {
+      windIndex++;
+    }
+    lastWindSample = currentTime;
   }
   if(tempDT.minute() != nowDT.minute()){
     avrTemp = computAverage(tempBuffer,6);
@@ -79,15 +89,6 @@ void loop() {
     logSamplingData(humiBuffer,6,"h");
     logSamplingData(windSpeedBuffer,240,"w");
     tempDT = nowDT;
-  }
-}
-
-void sample(){
-  windSpeedBuffer[windIndex] = analogRead(WINDPIN) * 30 / 1023.0;
-  if(windIndex == 239){ 
-    windIndex = 0;
-  } else {
-    windIndex++;
   }
 }
 
