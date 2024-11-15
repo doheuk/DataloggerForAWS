@@ -4,16 +4,13 @@
 #include <SPI.h>
 #include <RTClib.h>
 
+#define CSPIN 4 //sd카드 
 #define DHTPIN A0 // 온습도센서
 #define WINDPIN A1 // 풍속센서
-#define CSPIN 4 //sd카드 
 
 RTC_DS3231 rtc; // dht 설정
 DHT11 dht(A0); // dht11 설정
 LiquidCrystal_I2C lcd(0x27, 16, 2); // LCD 설정
-
-File samplingFile;  // 샘플링 파일
-File averageFile;       // 평균 파일
 
 float tempBuffer[6] = {0};
 float humiBuffer[6] = {0};
@@ -22,9 +19,6 @@ float avrWind, avrTemp, avrHumi;
 int tempIndex = 0;
 int windIndex = 0;
 DateTime tempDT;
-float computAverage(float buffer[], int size);
-void logSamplingData(float buffer[], int size, String sensor);
-void logAverageData();
 unsigned long lastWindSample;
 void setup() {
   Serial.begin(9600);
@@ -92,44 +86,6 @@ void loop() {
   }
 }
 
-float computAverage(float buffer[], int size) {
-  float sum = 0;
-  for (int i = 0; i < size; i++) {
-    sum += buffer[i];
-  }
-  return (sum / size);
-}
 
-void logSamplingData(float buffer[], int size, String sensor) {
-    String filename = (tempDT.month() < 10 ? "0" : "") + String(tempDT.month()) + (tempDT.day() < 10 ? "0" : "") + String(tempDT.day())+sensor+".txt";  // 날짜별 샘플링 파일명
-    samplingFile = SD.open(filename, FILE_WRITE);
 
-    if (samplingFile) {
-      String timeString = (tempDT.hour() < 10 ? "0" : "") + String(tempDT.hour()) + ":" +(tempDT.minute() < 10 ? "0" : "")+ tempDT.minute();
-      samplingFile.print(timeString);
-      for(int i = 0; i < size; i++){
-        samplingFile.print(" ");
-        samplingFile.print(buffer[i]);
-      }
-      samplingFile.println();
-      samplingFile.close();
-    } else {
-        Serial.println("샘플링 파일 생성 실패");
-    }
-}
 
-// 1분 평균 데이터 로그 함수
-void logAverageData() {
-    String filename =(tempDT.month() < 10 ? "0" : "") + String(tempDT.month()) + (tempDT.day() < 10 ? "0" : "") + String(tempDT.day())+"m.txt";  // 날짜별 평균 파일명
-    averageFile = SD.open(filename, FILE_WRITE);
-    // 평균 데이터 기록
-    if(averageFile){
-    String timeString = (tempDT.hour() < 10 ? "0" : "") + String(tempDT.hour()) + ":" +(tempDT.minute() < 10 ? "0" : "")+ tempDT.minute();
-    String avrString = " " + String(avrTemp) + " " + String(avrWind) + " " + String(avrHumi);
-    averageFile.print(timeString);
-    averageFile.println(avrString);
-    averageFile.close();
-    } else {
-      Serial.println("평균 파일 생성 실패");
-    }
-}
