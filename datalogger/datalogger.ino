@@ -3,6 +3,8 @@
 #include <SD.h>
 #include <SPI.h>
 #include <RTClib.h>
+#include "Utility.h"
+#include <Adafruit_SleepyDog.h>
 
 #define CSPIN 4 //sd카드 
 #define DHTPIN A0 // 온습도센서
@@ -12,20 +14,21 @@ RTC_DS3231 rtc; // dht 설정
 DHT11 dht(A0); // dht11 설정
 LiquidCrystal_I2C lcd(0x27, 16, 2); // LCD 설정
 
-float tempBuffer[6] = {0};
-float humiBuffer[6] = {0};
-float windSpeedBuffer[240] = {0};
-float avrWind, avrTemp, avrHumi;
-int tempIndex = 0;
-int windIndex = 0;
 DateTime tempDT;
+float tempBuffer[6] = {0},  humiBuffer[6] = {0}, windSpeedBuffer[240]={0};
+float avrWind, avrTemp, avrHumi;
+int tempIndex = 0, windIndex = 0;
 unsigned long lastWindSample;
+const unsigned long windInterval = 250;
+// 센서 설정 저장용 변수
+SensorConfig tempConfig, humiConfig, windConfig;
+
 void setup() {
   Serial.begin(9600);
   // rtc 시작
   if(!rtc.begin()){
     Serial.println("Couldn't find RTC");
-    while(1);
+    while(1); //수정 필요
   }
   if(rtc.lostPower()){
     Serial.println("RTC lost power, lets set the time!");
@@ -39,10 +42,13 @@ void setup() {
     delay(1000);
   }
   Serial.println("SD카드 초기화 성공");
+  readConfig();
+  Watchdog.enable(4000); // 와치도그 리셋 실행 4초
   lastWindSample = millis(); 
 }
 
-const unsigned long windInterval = 250;
+int errorTempCount = 0, errorHumiCount = 0, errorWindCount = 0;
+int resetFlag = 0;
 
 void loop() {
   unsigned long currentTime = millis();
@@ -50,6 +56,12 @@ void loop() {
   if(nowDT.second()%10 ==0){
     tempBuffer[tempIndex] = dht.readTemperature();
     humiBuffer[tempIndex] = dht.readHumidity();
+    if (tempBuffer[tempIndex] < tempConfig.min || tempBuffer[tempIndex] > tempConfig.max) {
+        errorTempCount++;
+    }
+    if (humiBuffer[tempIndex] < humiConfig.min || humiBuffer[tempIndex] > humiConfig.max) {
+        errorHumiCount++;
+    }
     if(tempIndex == 5){
       tempIndex = 0;
     } else {
@@ -58,6 +70,9 @@ void loop() {
   }
   if(currentTime - lastWindSample >= windInterval) {
     windSpeedBuffer[windIndex] = analogRead(WINDPIN) * 30 / 1023.0;
+    if (windSpeedBuffer[windIndex] < windConfig.min || windSpeedBuffer[windIndex] > windConfig.max) {
+        errorWindCount++;
+    }
     if(windIndex == 239){ 
       windIndex = 0;
     } else {
@@ -65,10 +80,29 @@ void loop() {
     }
     lastWindSample = currentTime;
   }
+  //시간단위 명령
+  if(tempDT.hour() != nowDT.hour()){
+    if(errorHumiCount >= humiConfig.count){
+      resetFlag = 1;
+      //로그
+    }
+    if(errorTempCount >= tempConfig.count){
+      resetFlag = 1;
+    }
+    if(errorWindCount >= windConfig.count){
+      resetFlag = 1;
+    }
+    if(resetFlag == 1) {
+      while(1){
+        delay(1000); // 무한루프 --> 와치도그 리셋
+      }
+    }
+  }
+  //1분단위 명령
   if(tempDT.minute() != nowDT.minute()){
-    avrTemp = computAverage(tempBuffer,6);
-    avrHumi = computAverage(humiBuffer,6);
-    avrWind = computAverage(windSpeedBuffer,240);
+    avrTemp = calAvr(tempBuffer,6);
+    avrHumi = calAvr(humiBuffer,6);
+    avrWind = calAvr(windSpeedBuffer,240);
     if(tempDT.hour() < 10) //HH:MM 형식을 위함
       Serial.print("0");
     Serial.print(tempDT.hour(),DEC);
@@ -84,6 +118,7 @@ void loop() {
     logSamplingData(windSpeedBuffer,240,"w");
     tempDT = nowDT;
   }
+  Watchdog.reset();//와치도그 타이머 리셋
 }
 
 

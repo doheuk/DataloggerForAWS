@@ -17,15 +17,6 @@ void logAverageData() {
     }
 }
 
-//평균 함
-float computAverage(float buffer[], int size) {
-  float sum = 0;
-  for (int i = 0; i < size; i++) {
-    sum += buffer[i];
-  }
-  return (sum / size);
-}
-
 //샘플링데이터 로그함수
 void logSamplingData(float buffer[], int size, String sensor) {
     String filename = (tempDT.month() < 10 ? "0" : "") + String(tempDT.month()) + (tempDT.day() < 10 ? "0" : "") + String(tempDT.day())+sensor+".txt";  // 날짜별 샘플링 파일명
