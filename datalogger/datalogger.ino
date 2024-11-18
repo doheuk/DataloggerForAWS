@@ -57,10 +57,12 @@ void loop() {
     tempBuffer[tempIndex] = dht.readTemperature();
     humiBuffer[tempIndex] = dht.readHumidity();
     if (tempBuffer[tempIndex] < tempConfig.min || tempBuffer[tempIndex] > tempConfig.max) {
-        errorTempCount++;
+      logError("temp sensor error");
+      errorTempCount++;
     }
     if (humiBuffer[tempIndex] < humiConfig.min || humiBuffer[tempIndex] > humiConfig.max) {
-        errorHumiCount++;
+      logError("humi sensor error");
+      errorHumiCount++;
     }
     if(tempIndex == 5){
       tempIndex = 0;
@@ -71,7 +73,8 @@ void loop() {
   if(currentTime - lastWindSample >= windInterval) {
     windSpeedBuffer[windIndex] = analogRead(WINDPIN) * 30 / 1023.0;
     if (windSpeedBuffer[windIndex] < windConfig.min || windSpeedBuffer[windIndex] > windConfig.max) {
-        errorWindCount++;
+      logError("wind sensor error");
+      errorWindCount++;
     }
     if(windIndex == 239){ 
       windIndex = 0;
@@ -85,14 +88,21 @@ void loop() {
     if(errorHumiCount >= humiConfig.count){
       resetFlag = 1;
       //로그
+    }else{
+      errorHumiCount = 0;
     }
     if(errorTempCount >= tempConfig.count){
       resetFlag = 1;
+    }else{
+      errorTempCount = 0;
     }
     if(errorWindCount >= windConfig.count){
       resetFlag = 1;
+    }else{
+      errorWindCount = 0;
     }
     if(resetFlag == 1) {
+      logError("datalogger restarting");
       while(1){
         delay(1000); // 무한루프 --> 와치도그 리셋
       }

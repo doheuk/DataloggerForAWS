@@ -1,5 +1,4 @@
-File samplingFile;  // 샘플링 파일
-File averageFile;       // 평균 파일
+File samplingFile, averageFile, logFile;  // 샘플링, 평균, 로그 파일
 
 // 1분 평균 데이터 로그 함수
 void logAverageData() {
@@ -33,5 +32,19 @@ void logSamplingData(float buffer[], int size, String sensor) {
       samplingFile.close();
     } else {
         Serial.println("샘플링 파일 생성 실패");
+    }
+}
+void logError(String str){
+  String filename =(tempDT.month() < 10 ? "0" : "") + String(tempDT.month()) + (tempDT.day() < 10 ? "0" : "") + String(tempDT.day())+"lg.txt";  // 날짜별 평균 파일명
+  logFile = SD.open(filename, FILE_WRITE);
+    // 오류 기록
+    if(logFile){
+    String timeString = (tempDT.hour() < 10 ? "0" : "") + String(tempDT.hour()) + ":" +(tempDT.minute() < 10 ? "0" : "")+ tempDT.minute();
+    String logString = " " + str;
+    logFile.print(timeString);
+    logFile.println(logString);
+    logFile.close();
+    } else {
+      Serial.println("로그 파일 생성 실패");
     }
 }
