@@ -34,7 +34,7 @@ void setup() {
     Serial.println("RTC lost power, lets set the time!");
     rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
   }
-  tempDT = DateTime(__DATE__,__TIME__);
+  tempDT = rtc.now();
 
   // SD 카드 초기화
   while(!SD.begin(CSPIN)){
@@ -45,6 +45,28 @@ void setup() {
   readConfig();
   Watchdog.enable(4000); // 와치도그 리셋 실행 4초
   lastWindSample = millis(); 
+  // 디버깅
+  Serial.print(tempConfig.name);
+  Serial.print(" ");
+  Serial.print(tempConfig.min);
+  Serial.print(" ");
+  Serial.print(tempConfig.max);
+  Serial.print(" ");
+  Serial.println(tempConfig.count);
+  Serial.print(humiConfig.name);
+  Serial.print(" ");
+  Serial.print(humiConfig.min);
+  Serial.print(" ");
+  Serial.print(humiConfig.max);
+  Serial.print(" ");
+  Serial.println(humiConfig.count);
+  Serial.print(windConfig.name);
+  Serial.print(" ");
+  Serial.print(windConfig.min);
+  Serial.print(" ");
+  Serial.print(windConfig.max);
+  Serial.print(" ");
+  Serial.println(windConfig.count);
 }
 
 int errorTempCount = 0, errorHumiCount = 0, errorWindCount = 0;
@@ -57,11 +79,9 @@ void loop() {
     tempBuffer[tempIndex] = dht.readTemperature();
     humiBuffer[tempIndex] = dht.readHumidity();
     if (tempBuffer[tempIndex] < tempConfig.min || tempBuffer[tempIndex] > tempConfig.max) {
-      logError("temp sensor error");
       errorTempCount++;
     }
     if (humiBuffer[tempIndex] < humiConfig.min || humiBuffer[tempIndex] > humiConfig.max) {
-      logError("humi sensor error");
       errorHumiCount++;
     }
     if(tempIndex == 5){
@@ -73,7 +93,6 @@ void loop() {
   if(currentTime - lastWindSample >= windInterval) {
     windSpeedBuffer[windIndex] = analogRead(WINDPIN) * 30 / 1023.0;
     if (windSpeedBuffer[windIndex] < windConfig.min || windSpeedBuffer[windIndex] > windConfig.max) {
-      logError("wind sensor error");
       errorWindCount++;
     }
     if(windIndex == 239){ 
@@ -85,27 +104,23 @@ void loop() {
   }
   //시간단위 명령
   if(tempDT.hour() != nowDT.hour()){
-    if(errorHumiCount >= humiConfig.count){
-      resetFlag = 1;
-      //로그
-    }else{
-      errorHumiCount = 0;
-    }
-    if(errorTempCount >= tempConfig.count){
-      resetFlag = 1;
-    }else{
-      errorTempCount = 0;
-    }
-    if(errorWindCount >= windConfig.count){
-      resetFlag = 1;
-    }else{
-      errorWindCount = 0;
-    }
-    if(resetFlag == 1) {
-      logError("datalogger restarting");
-      while(1){
-        delay(1000); // 무한루프 --> 와치도그 리셋
-      }
+    errorHumiCount = errorTempCount = errorWindCount = 0;
+  }
+  if(errorHumiCount >= humiConfig.count){
+    resetFlag = 1;
+    logError("datalogger restarting because of temp sensor");
+  }
+  if(errorTempCount >= tempConfig.count){
+    logError("datalogger restarting because of humi sensor");
+    resetFlag = 1;
+  }
+  if(errorWindCount >= windConfig.count){
+    logError("datalogger restarting because of wind sensor");
+    resetFlag = 1;
+  }
+  if(resetFlag == 1) {
+    while(1){
+      delay(1000); // 무한루프 --> 와치도그 리셋
     }
   }
   //1분단위 명령
@@ -127,6 +142,11 @@ void loop() {
     logSamplingData(humiBuffer,6,"h");
     logSamplingData(windSpeedBuffer,240,"w");
     tempDT = nowDT;
+    Serial.print(errorHumiCount);
+    Serial.print(" ");
+    Serial.print(errorTempCount);
+    Serial.print(" ");
+    Serial.println(errorWindCount);
   }
   Watchdog.reset();//와치도그 타이머 리셋
 }

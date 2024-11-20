@@ -11,15 +11,21 @@ void printConfig(SensorConfig config) {
 }
 
 void readConfig() {
-  File policeFile = SD.open("police.txt");  
+  File policeFile = SD.open("POLICE.TXT");  
     if (policeFile) {
         while (policeFile.available()) {
-            // 센서 이름, 최소값, 최대값, 초기화 기준 횟수를 읽음
-            String name = policeFile.readStringUntil(' ');
-            int min = policeFile.parseInt();
-            int max = policeFile.parseInt();
-            int count = policeFile.parseInt();
-            
+            String line = policeFile.readStringUntil('\n');
+            line.trim(); // 줄 끝의 공백 및 줄바꿈 제거
+
+    // 센서 이름, 최소값, 최대값, 초기화 기준 횟수를 읽음
+            int firstSpace = line.indexOf(' ');
+            int secondSpace = line.indexOf(' ', firstSpace + 1);
+            int thirdSpace = line.indexOf(' ', secondSpace + 1);
+
+            String name = line.substring(0, firstSpace);
+            int min = line.substring(firstSpace + 1, secondSpace).toInt();
+            int max = line.substring(secondSpace + 1, thirdSpace).toInt();
+            int count = line.substring(thirdSpace + 1).toInt();
             // 센서 이름에 따라 해당 구조체에 값을 저장
             if (name == "temp") {
                 tempConfig = {name, min, max, count};
@@ -30,6 +36,7 @@ void readConfig() {
             }
         }
         policeFile.close();  // 파일 닫기
+        Serial.println("정책 읽기 완료");
     } else {
         Serial.println("Failed to open config file.");
     }
