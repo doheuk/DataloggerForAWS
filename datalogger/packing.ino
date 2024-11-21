@@ -9,7 +9,8 @@ uint8_t id[2];
 uint8_t data[135] = {0x00};
 uint8_t check[2] = {0x00};
 uint8_t end[2] = {0xFF, 0xFF}; // 끝
-uint8_t packet[153];
+void hexSplit(uint8_t array[], int n, int i);
+void crc16(const uint8_t *data, size_t length);
 
 void packData() {
   int i;
@@ -24,33 +25,70 @@ void packData() {
   }
 }
 
-void createPacket() {
+String createPacket() {
+  String result = "";
   int i,k = 0;
+  dateTime[0] = (tempDT.year() - 2000);
+  dateTime[1] = tempDT.month();
+  dateTime[2] = tempDT.day();
+  dateTime[3] = tempDT.hour();
+  dateTime[4] = tempDT.minute();
   packData();
   for (i = 0; i < 2; i++) {
-    packet[k++] = start[i];
+    if(start[i] < 0x10) {
+      result += "0";  // 앞에 0 추가
+    }
+    // 16진수로 변환하고 문자열에 추가
+    result += String(start[i], HEX);
   }
   for (i = 0; i < 3; i++) {
-    packet[k++] = protocolVer[i];
+    if(protocolVer[i] < 0x10) {
+      result += "0";  // 앞에 0 추가
+    }
+    // 16진수로 변환하고 문자열에 추가
+    result += String(protocolVer[i], HEX);
   }
   for (int i = 0; i < 5; i++) {
-    packet[k++] = dateTime[i];
+    if(dateTime[i] < 0x10) {
+      result += "0";  // 앞에 0 추가
+    }
+    // 16진수로 변환하고 문자열에 추가
+    result += String(dateTime[i], HEX);
   }
-  packet[k++] = dataClass;
-  packet[k++] = dataFormatNum;
+  result += dataClass;
+  result += dataFormatNum;
   for (i = 0; i < 2; i++) {
-    packet[k++] = id[i];
+    if(id[i] < 0x10) {
+      result += "0";  // 앞에 0 추가
+    }
+    // 16진수로 변환하고 문자열에 추가
+    result += String(id[i], HEX);
   }
   for (i = 0; i < 135; i++) {
-    packet[k++] = data[i];
+    if(data[i] < 0x10) {
+      result += "0";  // 앞에 0 추가
+    }
+    // 16진수로 변환하고 문자열에 추가
+    result += String(data[i], HEX);
   }
-  crc16(packet, 149);
+  //crc16(packet, 149);
   for (i = 0; i < 2; i++) {
-    packet[k++] = check[i];
+    if(check[i] < 0x10) {
+      result += "0";  // 앞에 0 추가
+    }
+    // 16진수로 변환하고 문자열에 추가
+    result += String(check[i], HEX);
   }
   for (i = 0; i < 2; i++) {
-    packet[k++] = end[i];
+    if(end[i] < 0x10) {
+      result += "0";  // 앞에 0 추가
+    }
+    // 16진수로 변환하고 문자열에 추가
+    result += String(end[i], HEX);
   }
+    // 결과 문자열 초기화
+  
+    return result;
 }
 
 void hexSplit(uint8_t array[], int n, int i) {
@@ -59,7 +97,7 @@ void hexSplit(uint8_t array[], int n, int i) {
 }
 
 // CRC16-CCITT 계산을 위한 함수
-void crc16(const uint8_t *data, size_t length) {
+void crc16(String data, size_t length){
     uint16_t crc = 0xFFFF; // 초기 CRC 값
 
     for (size_t i = 2; i < length; i++) {
@@ -76,15 +114,3 @@ void crc16(const uint8_t *data, size_t length) {
     }
     hexSplit(check, crc, 0); // 계산된 CRC 값 입력
 }
-uint8_t dataPacket[153] = {0};
-void sendPacket(uint8_t array[], int len) {
-  for(int i = 0; i < len; i++) {
-    if(array[i]<0x10){
-      Serial.print("0");
-    }
-    Serial.print(packet[i],HEX);
-    Serial.print(" ");
-  }
-}
-
-

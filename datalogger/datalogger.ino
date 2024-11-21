@@ -5,6 +5,7 @@
 #include <RTClib.h>
 #include "Utility.h"
 #include <Adafruit_SleepyDog.h>
+#include <SoftwareSerial.h>
 
 #define CSPIN 4 //sd카드 
 #define DHTPIN A0 // 온습도센서
@@ -22,9 +23,12 @@ unsigned long lastWindSample;
 const unsigned long windInterval = 250;
 // 센서 설정 저장용 변수
 SensorConfig tempConfig, humiConfig, windConfig;
+void connectWiFi();
+void sendDataToServer(String data);
 
 void setup() {
   Serial.begin(9600);
+  Serial1.begin(9600);        // ESP-01과 통신
   // rtc 시작
   if(!rtc.begin()){
     Serial.println("Couldn't find RTC");
@@ -43,8 +47,10 @@ void setup() {
   }
   Serial.println("SD카드 초기화 성공");
   readConfig();
-  Watchdog.enable(4000); // 와치도그 리셋 실행 4초
+  connectWiFi();
+  //Watchdog.enable(4000); // 와치도그 리셋 실행 4초
   lastWindSample = millis(); 
+  
   // 디버깅
   Serial.print(tempConfig.name);
   Serial.print(" ");
@@ -118,11 +124,13 @@ void loop() {
     logError("datalogger restarting because of wind sensor");
     resetFlag = 1;
   }
+  /*
   if(resetFlag == 1) {
     while(1){
       delay(1000); // 무한루프 --> 와치도그 리셋
     }
   }
+  */
   //1분단위 명령
   if(tempDT.minute() != nowDT.minute()){
     avrTemp = calAvr(tempBuffer,6);
@@ -141,6 +149,8 @@ void loop() {
     logSamplingData(tempBuffer,6,"t");
     logSamplingData(humiBuffer,6,"h");
     logSamplingData(windSpeedBuffer,240,"w");
+    String dataP = createPacket();
+    sendDataToServer(dataP);// 데이터 전송
     tempDT = nowDT;
     Serial.print(errorHumiCount);
     Serial.print(" ");
@@ -148,7 +158,7 @@ void loop() {
     Serial.print(" ");
     Serial.println(errorWindCount);
   }
-  Watchdog.reset();//와치도그 타이머 리셋
+  //Watchdog.reset();//와치도그 타이머 리셋
 }
 
 
