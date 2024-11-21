@@ -17,16 +17,16 @@ void connectWiFi() {
   }
 }
 
-void sendDataToServer(String data) {
+void sendDataToServer() {
   Serial.println("Connecting to server...");
   String connectCommand = "AT+CIPSTART=\"TCP\",\""+serverIP+"\","+serverPort;
   Serial1.println(connectCommand);        // 서버 접속
   delay(1000);
   
-  String sendCommand = "AT+CIPSEND=" + String(data.length());
+  String sendCommand = "AT+CIPSEND=153";
   Serial1.println(sendCommand);         // 데이터 크기 명시
   delay(1000);
-  Serial1.print(data);                // 데이터 전송
+  Serial1.write(packet,153);
   Serial1.println("AT+CIPCLOSE");       // 연결 닫기
   delay(1000);
   Serial.println("Connection closed.");

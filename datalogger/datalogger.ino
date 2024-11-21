@@ -21,10 +21,11 @@ float avrWind, avrTemp, avrHumi;
 int tempIndex = 0, windIndex = 0;
 unsigned long lastWindSample;
 const unsigned long windInterval = 250;
+uint8_t packet[153];
 // 센서 설정 저장용 변수
 SensorConfig tempConfig, humiConfig, windConfig;
 void connectWiFi();
-void sendDataToServer(String data);
+void sendDataToServer();
 
 void setup() {
   Serial.begin(9600);
@@ -48,31 +49,8 @@ void setup() {
   Serial.println("SD카드 초기화 성공");
   readConfig();
   connectWiFi();
-  //Watchdog.enable(4000); // 와치도그 리셋 실행 4초
+  Watchdog.enable(4000); // 와치도그 리셋 실행 4초
   lastWindSample = millis(); 
-  
-  // 디버깅
-  Serial.print(tempConfig.name);
-  Serial.print(" ");
-  Serial.print(tempConfig.min);
-  Serial.print(" ");
-  Serial.print(tempConfig.max);
-  Serial.print(" ");
-  Serial.println(tempConfig.count);
-  Serial.print(humiConfig.name);
-  Serial.print(" ");
-  Serial.print(humiConfig.min);
-  Serial.print(" ");
-  Serial.print(humiConfig.max);
-  Serial.print(" ");
-  Serial.println(humiConfig.count);
-  Serial.print(windConfig.name);
-  Serial.print(" ");
-  Serial.print(windConfig.min);
-  Serial.print(" ");
-  Serial.print(windConfig.max);
-  Serial.print(" ");
-  Serial.println(windConfig.count);
 }
 
 int errorTempCount = 0, errorHumiCount = 0, errorWindCount = 0;
@@ -149,8 +127,10 @@ void loop() {
     logSamplingData(tempBuffer,6,"t");
     logSamplingData(humiBuffer,6,"h");
     logSamplingData(windSpeedBuffer,240,"w");
-    String dataP = createPacket();
-    sendDataToServer(dataP);// 데이터 전송
+    Watchdog.disable();
+    createPacket();
+    sendDataToServer();// 데이터 전송
+    Watchdog.enable(4000);
     tempDT = nowDT;
     Serial.print(errorHumiCount);
     Serial.print(" ");
@@ -158,7 +138,7 @@ void loop() {
     Serial.print(" ");
     Serial.println(errorWindCount);
   }
-  //Watchdog.reset();//와치도그 타이머 리셋
+  Watchdog.reset();//와치도그 타이머 리셋
 }
 
 

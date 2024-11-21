@@ -3,14 +3,13 @@
 uint8_t start[2] = {0xFA, 0xFB}; //시작
 uint8_t protocolVer[3] = {0x14, 0x01, 0x01}; //프로토콜 버전
 uint8_t dateTime[5]; // 날짜 시간
-uint8_t dataClass = 'B'; //자료구분 I, B
+uint8_t dataClass = 'I'; //자료구분 I, B
 uint8_t dataFormatNum = 0x00; // 자료형식번호
-uint8_t id[2];
+uint8_t id[2] = {0x03, 0x2C};
 uint8_t data[135] = {0x00};
 uint8_t check[2] = {0x00};
 uint8_t end[2] = {0xFF, 0xFF}; // 끝
 void hexSplit(uint8_t array[], int n, int i);
-void crc16(const uint8_t *data, size_t length);
 
 void packData() {
   int i;
@@ -25,8 +24,7 @@ void packData() {
   }
 }
 
-String createPacket() {
-  String result = "";
+void createPacket() {
   int i,k = 0;
   dateTime[0] = (tempDT.year() - 2000);
   dateTime[1] = tempDT.month();
@@ -35,61 +33,31 @@ String createPacket() {
   dateTime[4] = tempDT.minute();
   packData();
   for (i = 0; i < 2; i++) {
-    if(start[i] < 0x10) {
-      result += "0";  // 앞에 0 추가
-    }
-    // 16진수로 변환하고 문자열에 추가
-    result += String(start[i], HEX);
+    packet[k++] = start[i];
   }
   for (i = 0; i < 3; i++) {
-    if(protocolVer[i] < 0x10) {
-      result += "0";  // 앞에 0 추가
-    }
-    // 16진수로 변환하고 문자열에 추가
-    result += String(protocolVer[i], HEX);
+    packet[k++] = protocolVer[i];
   }
   for (int i = 0; i < 5; i++) {
-    if(dateTime[i] < 0x10) {
-      result += "0";  // 앞에 0 추가
-    }
-    // 16진수로 변환하고 문자열에 추가
-    result += String(dateTime[i], HEX);
+    packet[k++] = dateTime[i];
   }
-  result += dataClass;
-  result += dataFormatNum;
+  packet[k++] = dataClass;
+  packet[k++] = dataFormatNum;
   for (i = 0; i < 2; i++) {
-    if(id[i] < 0x10) {
-      result += "0";  // 앞에 0 추가
-    }
-    // 16진수로 변환하고 문자열에 추가
-    result += String(id[i], HEX);
+    packet[k++] = id[i];
   }
   for (i = 0; i < 135; i++) {
-    if(data[i] < 0x10) {
-      result += "0";  // 앞에 0 추가
-    }
-    // 16진수로 변환하고 문자열에 추가
-    result += String(data[i], HEX);
+    packet[k++] = data[i];
   }
-  //crc16(packet, 149);
+  crc16(packet, 149);
   for (i = 0; i < 2; i++) {
-    if(check[i] < 0x10) {
-      result += "0";  // 앞에 0 추가
-    }
-    // 16진수로 변환하고 문자열에 추가
-    result += String(check[i], HEX);
+    packet[k++] = check[i];
   }
   for (i = 0; i < 2; i++) {
-    if(end[i] < 0x10) {
-      result += "0";  // 앞에 0 추가
-    }
-    // 16진수로 변환하고 문자열에 추가
-    result += String(end[i], HEX);
+    packet[k++] = end[i];
   }
-    // 결과 문자열 초기화
-  
-    return result;
 }
+
 
 void hexSplit(uint8_t array[], int n, int i) {
   array[i++] = (n >> 8) & 0xFF;
