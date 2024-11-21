@@ -7,14 +7,20 @@ String serverIP = "106.249.180.230", serverPort = "41002";
 void connectWiFi() {
   Serial.println("Connecting to WiFi...");
 
-  String command = "AT+CWJAP=\"" + ssid + "\",\"" + password + "\"";
-  Serial1.println(command);  // WiFi 네트워크 연결
-  delay(5000);
-  if (Serial1.find("WIFI CONNECTED")) { // 연결 성공 확인
-    Serial.println("WiFi connected.");
-  } else {
-    Serial.println("WiFi connection failed!");
+  String command = "AT+CWJAP=\"" + ssid + "\",\"" + password + "\"";  
+  int i = 0;
+  while(!Serial1.find("WIFI CONNECTED")){ // 연결 성공 확인
+    if(i % 5 == 0) {
+      Serial1.println(command); // WiFi 네트워크 연결
+    }
+    if(i == 16 ){
+      Serial.println("restarting datalogger");
+      Watchdog.enable(1000);
+    }
+    i ++;
+    delay(1000);
   }
+  Serial.println("WiFi connected.");
 }
 
 void sendDataToServer() {

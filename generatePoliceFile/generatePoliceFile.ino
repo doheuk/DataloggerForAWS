@@ -17,7 +17,7 @@ void setup() {
   if(policeFile){
     policeFile.println("temp -20 25 3");
     policeFile.println("humi 0 100 3");
-    policeFile.println("wind 0 30 3");
+    policeFile.println("wind 0 30 120");
     policeFile.close();
     Serial.println("정책 파일 생성");
   }else{
