@@ -7,11 +7,14 @@
 #include <Adafruit_SleepyDog.h>
 #include <SoftwareSerial.h>
 
-#define CSPIN 4 //sd카드 
-#define DHTPIN A0 // 온습도센서
-#define WINDPIN A1 // 풍속센서
+#define CSPIN 4 // Micro SD CS 
+#define DHTPIN A0 // DHT 11 temp and humi
+#define WINDPIN A1 // Wind Speed
+#define WINDCTR A7 // Wind Control
+#define DHTCTR A6 // DHT Control
+#define ESPCTR A5// ESP8266 Control
 
-RTC_DS3231 rtc; // dht 설정
+RTC_DS3231 rtc;
 DHT11 dht(A0); // dht11 설정
 LiquidCrystal_I2C lcd(0x27, 16, 2); // LCD 설정
 
@@ -24,12 +27,18 @@ const unsigned long windInterval = 250;
 uint8_t packet[153];
 // 센서 설정 저장용 변수
 SensorConfig tempConfig, humiConfig, windConfig;
-void connectWiFi();
-void sendDataToServer();
+bool connectWiFi();
+bool sendDataToServer();
 
 void setup() {
   Serial.begin(9600);
   Serial1.begin(9600);        // ESP-01과 통신
+  pinMode(DHTCTR, OUTPUT);
+  pinMode(WINDCTR, OUTPUT);
+  pinMode(ESPCTR, OUTPUT);
+  digitalWrite(DHTCTR, HIGH);
+  digitalWrite(WINDCTR, HIGH);
+  digitalWrite(ESPCTR, HIGH);
   // rtc 시작
   if(!rtc.begin()){
     Serial.println("Couldn't find RTC");
@@ -53,7 +62,7 @@ void setup() {
   lastWindSample = millis(); 
 }
 
-int errorTempCount = 0, errorHumiCount = 0, errorWindCount = 0;
+int errorTempCount = 0, errorHumiCount = 0, errorWindCount = 0, errorTotal = 0;
 int resetFlag = 0;
 
 void loop() {
@@ -86,29 +95,40 @@ void loop() {
     }
     lastWindSample = currentTime;
   }
-  //시간단위 명령
-  if(tempDT.hour() != nowDT.hour()){
-    errorHumiCount = errorTempCount = errorWindCount = 0;
-  }
+  //장애 판단
   if(errorHumiCount >= humiConfig.count){
-    resetFlag = 1;
-    logError("datalogger restarting because of temp sensor");
+    errorHumiCount = 0;
+    digitalWrite(DHTCTR, LOW);
+    delay(50);
+    digitalWrite(DHTCTR, HIGH);
+    logError("humi sensor error");
+    errorTotal++;
   }
   if(errorTempCount >= tempConfig.count){
-    logError("datalogger restarting because of humi sensor");
-    resetFlag = 1;
+    errorTempCount = 0;
+    //Serial.print("온도 센서 복구");
+    digitalWrite(DHTCTR, LOW);
+    delay(50);
+    digitalWrite(DHTCTR, HIGH);
+    logError("temp sensor error");
+    errorTotal++;
   }
   if(errorWindCount >= windConfig.count){
-    logError("datalogger restarting because of wind sensor");
-    resetFlag = 1;
+    errorWindCount = 0;
+    digitalWrite(WINDCTR, LOW);
+    delay(50);
+    digitalWrite(WINDCTR, HIGH);
+    logError("wind sensor error");
+    errorTotal++;
   }
-  /*
-  if(resetFlag == 1) {
-    while(1){
-      delay(1000); // 무한루프 --> 와치도그 리셋
-    }
+  while(errorTotal > 10){
   }
-  */
+  //시간단위 명령
+  if(tempDT.hour() != nowDT.hour()){
+    errorTotal = 0;
+    errorHumiCount = errorTempCount = errorWindCount = 0;
+  }
+  
   //1분단위 명령
   if(tempDT.minute() != nowDT.minute()){
     avrTemp = calAvr(tempBuffer,6);
@@ -129,7 +149,20 @@ void loop() {
     logSamplingData(windSpeedBuffer,240,"w");
     Watchdog.disable();
     createPacket();
-    sendDataToServer();// 데이터 전송
+    bool tx = sendDataToServer();
+    for(int i = 0; i++; i<3){
+      if(tx){
+        break;
+      }else{
+        Serial.println("sendfail");
+        connectWiFi();
+      }
+      if(i == 2) {
+        logError("Transmission error");
+        errorTotal++;
+      }
+      tx = sendDataToServer();
+    }
     Watchdog.enable(4000);
     tempDT = nowDT;
     Serial.print(errorHumiCount);
