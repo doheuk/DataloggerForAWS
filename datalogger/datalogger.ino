@@ -1,4 +1,3 @@
-#include <LiquidCrystal_I2C.h>
 #include <DHT11.h>
 #include <SD.h>
 #include <SPI.h>
@@ -14,9 +13,11 @@
 #define DHTCTR A6 // DHT Control
 #define ESPCTR A5// ESP8266 Control
 
+// Wi-Fi 정보
+String ssid = "D308", password = "kookmin3088";
+
 RTC_DS3231 rtc;
 DHT11 dht(A0); // dht11 설정
-LiquidCrystal_I2C lcd(0x27, 16, 2); // LCD 설정
 
 DateTime tempDT;
 float tempBuffer[6] = {0},  humiBuffer[6] = {0}, windSpeedBuffer[240]={0};
@@ -28,7 +29,7 @@ uint8_t packet[153];
 // 센서 설정 저장용 변수
 SensorConfig tempConfig, humiConfig, windConfig;
 bool connectWiFi();
-bool sendDataToServer();
+bool sendDataToServer(String ssid, String password);
 
 void setup() {
   Serial.begin(9600);
@@ -57,7 +58,7 @@ void setup() {
   }
   Serial.println("SD카드 초기화 성공");
   readConfig();
-  connectWiFi();
+  connectWiFi(ssid, password);
   Watchdog.enable(4000); // 와치도그 리셋 실행 4초
   lastWindSample = millis(); 
 }
@@ -155,7 +156,7 @@ void loop() {
         break;
       }else{
         Serial.println("sendfail");
-        connectWiFi();
+        connectWiFi(ssid, password);
       }
       if(i == 2) {
         logError("Transmission error");
@@ -171,6 +172,7 @@ void loop() {
     Serial.print(" ");
     Serial.println(errorWindCount);
   }
+  clearSerialBuffer();
   Watchdog.reset();//와치도그 타이머 리셋
 }
 

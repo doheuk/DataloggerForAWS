@@ -7,3 +7,10 @@ float calAvr(float buffer[], int size) {
   }
   return (sum / size);
 }
+
+void clearSerialBuffer() {
+  while (Serial.available() > 0) {
+    Serial.read();  // 버퍼에서 데이터를 읽어서 무시
+  }
+    Serial1.read();
+}

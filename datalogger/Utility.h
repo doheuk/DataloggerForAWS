@@ -17,5 +17,6 @@ struct SensorConfig {
 // 설정 정보를 출력하는 함수
 void readConfig();
 void printConfig(SensorConfig config); 
+void clearSerialBuffer();
 
 #endif
