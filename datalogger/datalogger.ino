@@ -172,7 +172,6 @@ void loop() {
     // Serial.print(" ");
     // Serial.println(errorWindCount);
   }
-  clearSerialBuffer();
   Watchdog.reset();//와치도그 타이머 리셋
 }
 

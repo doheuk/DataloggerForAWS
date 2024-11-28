@@ -29,11 +29,15 @@ bool connectWiFi(String ssid, String password) {
     // 최대 시도 횟수를 초과하면 연결 실패
     if (i >= maxAttempts) {
       // Serial.println("Fail to connect to WiFi");
+      Serial1.flush();
+      clearSerialBuffer();
       return false;  // 연결 실패 반환
     }
   }
 
   // Serial.println("WiFi Connected!");
+  Serial1.flush();
+  clearSerialBuffer();
   return true;  // 연결 성공
 }
 
@@ -45,7 +49,9 @@ bool sendDataToServer(){
   while(!Serial1.find("CONNECT")){ // 연결 성공 확인
     if(i==0){
       Serial1.println(connectCommand);        // 서버 접속
-    } else if(i > 20) {
+    } else if(i > 30) {
+      Serial1.flush();
+      clearSerialBuffer();
       return false;
     }
     delay(100);
@@ -59,5 +65,7 @@ bool sendDataToServer(){
   Serial1.println("AT+CIPCLOSE");       // 연결 닫기
   delay(1000);
   // Serial.println("Connection closed.");
+  Serial1.flush();
+  clearSerialBuffer();
   return true;
 }
