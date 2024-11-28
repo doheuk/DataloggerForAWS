@@ -1,14 +1,14 @@
-void printConfig(SensorConfig config) {
-    Serial.print("Sensor: ");
-    Serial.println(config.name);
-    Serial.print("  Min Value: ");
-    Serial.println(config.min);
-    Serial.print("  Max Value: ");
-    Serial.println(config.max);
-    Serial.print("  Init Count: ");
-    Serial.println(config.count);
-    Serial.println();
-}
+// void printConfig(SensorConfig config) {
+    // Serial.print("Sensor: ");
+    // Serial.println(config.name);
+    // Serial.print("  Min Value: ");
+    // Serial.println(config.min);
+    // Serial.print("  Max Value: ");
+    // Serial.println(config.max);
+    // Serial.print("  Init Count: ");
+    // Serial.println(config.count);
+    // Serial.println();
+// }
 
 void readConfig() {
   File policeFile = SD.open("POLICE.TXT");  
@@ -36,9 +36,9 @@ void readConfig() {
             }
         }
         policeFile.close();  // 파일 닫기
-        Serial.println("정책 읽기 완료");
+        // Serial.println("정책 읽기 완료");
     } else {
-        Serial.println("Failed to open config file.");
+        // Serial.println("Failed to open config file.");
     }
 
     /*

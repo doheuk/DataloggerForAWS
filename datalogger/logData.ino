@@ -12,7 +12,7 @@ void logAverageData() {
     averageFile.println(avrString);
     averageFile.close();
     } else {
-      Serial.println("평균 파일 생성 실패");
+      // Serial.println("평균 파일 생성 실패");
     }
 }
 
@@ -31,7 +31,7 @@ void logSamplingData(float buffer[], int size, String sensor) {
       samplingFile.println();
       samplingFile.close();
     } else {
-        Serial.println("샘플링 파일 생성 실패");
+        // Serial.println("샘플링 파일 생성 실패");
     }
 }
 void logError(String str){
@@ -45,6 +45,6 @@ void logError(String str){
     logFile.println(logString);
     logFile.close();
     } else {
-      Serial.println("로그 파일 생성 실패");
+      // Serial.println("로그 파일 생성 실패");
     }
 }

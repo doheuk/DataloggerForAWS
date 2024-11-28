@@ -32,7 +32,7 @@ bool connectWiFi();
 bool sendDataToServer(String ssid, String password);
 
 void setup() {
-  Serial.begin(9600);
+  // Serial.begin(9600);
   Serial1.begin(9600);        // ESP-01과 통신
   pinMode(DHTCTR, OUTPUT);
   pinMode(WINDCTR, OUTPUT);
@@ -42,21 +42,21 @@ void setup() {
   digitalWrite(ESPCTR, HIGH);
   // rtc 시작
   if(!rtc.begin()){
-    Serial.println("Couldn't find RTC");
+    // Serial.println("Couldn't find RTC");
     while(1); //수정 필요
   }
   if(rtc.lostPower()){
-    Serial.println("RTC lost power, lets set the time!");
+    // Serial.println("RTC lost power, lets set the time!");
     rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
   }
   tempDT = rtc.now();
 
   // SD 카드 초기화
   while(!SD.begin(CSPIN)){
-    Serial.println("SD카드 초기화 실패");
+    // Serial.println("SD카드 초기화 실패");
     delay(1000);
   }
-  Serial.println("SD카드 초기화 성공");
+  // Serial.println("SD카드 초기화 성공");
   readConfig();
   connectWiFi(ssid, password);
   Watchdog.enable(4000); // 와치도그 리셋 실행 4초
@@ -135,15 +135,15 @@ void loop() {
     avrTemp = calAvr(tempBuffer,6);
     avrHumi = calAvr(humiBuffer,6);
     avrWind = calAvr(windSpeedBuffer,240);
-    if(tempDT.hour() < 10) //HH:MM 형식을 위함
-      Serial.print("0");
-    Serial.print(tempDT.hour(),DEC);
-    Serial.print(":");
-    if(tempDT.minute() <10) //HH:MM 형식을 위함
-      Serial.print("0");
-    Serial.print(tempDT.minute(),DEC);
+    // if(tempDT.hour() < 10) //HH:MM 형식을 위함
+      // Serial.print("0");
+    // Serial.print(tempDT.hour(),DEC);
+    // Serial.print(":");
+    // if(tempDT.minute() <10) //HH:MM 형식을 위함
+      // Serial.print("0");
+    // Serial.print(tempDT.minute(),DEC);
     String avrString = String(" Temp: ") + avrTemp + String(" Wind: ") + avrWind + String(" Humi: ") + avrHumi;
-    Serial.println(avrString);
+    // Serial.println(avrString);
     logAverageData();
     logSamplingData(tempBuffer,6,"t");
     logSamplingData(humiBuffer,6,"h");
@@ -155,7 +155,7 @@ void loop() {
       if(tx){
         break;
       }else{
-        Serial.println("sendfail");
+        // Serial.println("sendfail");
         connectWiFi(ssid, password);
       }
       if(i == 2) {
@@ -166,11 +166,11 @@ void loop() {
     }
     Watchdog.enable(4000);
     tempDT = nowDT;
-    Serial.print(errorHumiCount);
-    Serial.print(" ");
-    Serial.print(errorTempCount);
-    Serial.print(" ");
-    Serial.println(errorWindCount);
+    // Serial.print(errorHumiCount);
+    // Serial.print(" ");
+    // Serial.print(errorTempCount);
+    // Serial.print(" ");
+    // Serial.println(errorWindCount);
   }
   clearSerialBuffer();
   Watchdog.reset();//와치도그 타이머 리셋
